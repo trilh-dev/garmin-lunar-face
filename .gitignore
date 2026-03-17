@@ -1,0 +1,35 @@
+# ===== SENSITIVE - Developer Keys (DO NOT COMMIT) =====
+developer_key.der
+developer_key.pem
+*.der
+*.pem
+
+# ===== Build Output =====
+bin/
+*.prg
+*.iq
+
+# ===== Garmin SDK (cồng kềnh, tải riêng) =====
+connectiq-sdk-manager-windows/
+
+# ===== Design / PSD files =====
+*.psd
+
+# ===== Ảnh tạm / backup =====
+*_backup.png
+2026-03-11_18-51.png
+footsteps-icon-6.png
+
+# ===== Zip release =====
+*.zip
+
+# ===== OS files =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== Editor =====
+.vscode/
+.idea/
+*.suo
+*.user

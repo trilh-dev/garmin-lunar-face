@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout id="WatchFace">
+    <label id="TimeLabel" x="center" y="center" font="Gfx.FONT_LARGE" justification="Gfx.TEXT_JUSTIFY_CENTER" color="Gfx.COLOR_WHITE" />
+</layout>

@@ -1,0 +1,12 @@
+<drawables>
+    <bitmap id="LauncherIcon" filename="launcher_icon.png" />
+    <bitmap id="HeartIcon" filename="heart.png" />
+    <bitmap id="BatteryIcon" filename="battery.png" />
+    <bitmap id="PhoneIcon" filename="phone.png" />
+    <bitmap id="BluetoothIcon" filename="bluetooth.png" />
+    <bitmap id="MessageIcon" filename="message.png" />
+    <bitmap id="StepsIcon" filename="steps.png" />
+    <bitmap id="SunIcon" filename="sun.png" />
+    <bitmap id="CloudIcon" filename="cloud.png" />
+    <bitmap id="RainIcon" filename="rain.png" />
+</drawables>
