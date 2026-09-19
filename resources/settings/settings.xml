@@ -1,0 +1,11 @@
+<settings>
+    <setting propertyKey="@Properties.Background" title="@Strings.BackgroundTitle">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.BgNone</listEntry>
+            <listEntry value="1">@Strings.Bg1</listEntry>
+            <listEntry value="2">@Strings.Bg2</listEntry>
+            <listEntry value="3">@Strings.Bg3</listEntry>
+            <listEntry value="4">@Strings.Bg4</listEntry>
+        </settingConfig>
+    </setting>
+</settings>

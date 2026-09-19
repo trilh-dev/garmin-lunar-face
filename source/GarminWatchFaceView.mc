@@ -1,3 +1,4 @@
+import Toybox.Application;
 import Toybox.Graphics;
 import Toybox.Lang;
 import Toybox.Math;
@@ -8,12 +9,21 @@ import Toybox.Time.Gregorian;
 import Toybox.ActivityMonitor;
 import Toybox.Activity;
 import Toybox.Weather;
+import Toybox.SensorHistory;
 
 class GarminWatchFaceView extends WatchUi.WatchFace {
 
     // Cache lịch âm: chỉ tính lại khi ngày thay đổi
     var _cachedLunarDay as Number = -1;
     var _cachedLunarStr as String = "";
+
+    // SpO2: đọc lại lịch sử cảm biến mỗi phút một lần
+    var _spo2Min as Number = -1;
+    var _spo2Str as String = "SpO2 --";
+
+    // Ảnh nền: chỉ load lại khi người dùng đổi setting
+    var _bgIndex as Number = -1;
+    var _bgBitmap as BitmapResource? = null;
 
     function initialize() {
         WatchFace.initialize();
@@ -28,6 +38,19 @@ class GarminWatchFaceView extends WatchUi.WatchFace {
     function onUpdate(dc as Dc) as Void {
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
+
+        var bgIndex = Application.Properties.getValue("Background") as Number;
+        if (bgIndex != _bgIndex) {
+            _bgIndex = bgIndex;
+            _bgBitmap = null; // free the old image before loading the new one
+            var bgs = [Rez.Drawables.Bg1, Rez.Drawables.Bg2, Rez.Drawables.Bg3, Rez.Drawables.Bg4];
+            if (bgIndex >= 1 && bgIndex <= bgs.size()) {
+                _bgBitmap = WatchUi.loadResource(bgs[bgIndex - 1]) as BitmapResource;
+            }
+        }
+        if (_bgBitmap != null) {
+            dc.drawBitmap(0, 0, _bgBitmap);
+        }
 
         var width = dc.getWidth(); // Should be 208 on fr55
         var height = dc.getHeight(); // Should be 208 on fr55
@@ -53,9 +76,20 @@ class GarminWatchFaceView extends WatchUi.WatchFace {
         
         // Weather
         var weatherCond = null;
+        var weatherStr = "--";
         if (Toybox has :Weather) {
             var cond = Weather.getCurrentConditions();
-            if (cond != null) { weatherCond = cond.condition; }
+            if (cond != null) {
+                weatherCond = cond.condition;
+                var temp = cond.temperature;
+                if (temp != null) {
+                    if (deviceSettings.temperatureUnits == System.UNIT_STATUTE) { temp = temp * 9 / 5 + 32; }
+                    weatherStr = temp.format("%d") + "°";
+                } else {
+                    weatherStr = "-°";
+                }
+                if (cond.relativeHumidity != null) { weatherStr += " " + cond.relativeHumidity.format("%d") + "%"; }
+            }
         }
 
         // --- PROGRESS BARS ---
@@ -103,9 +137,9 @@ class GarminWatchFaceView extends WatchUi.WatchFace {
         var rowY = cy - 65;
         var textY = cy - 45;
 
-        // 1. Bluetooth Column (Center cx - 69)
+        // 1. Bluetooth Column (Center cx - 63)
         var btIcon = WatchUi.loadResource(Rez.Drawables.BluetoothIcon) as BitmapResource;
-        var btX = cx - 74; // cx - 69 - (11/2) 
+        var btX = cx - 68; // Center cx - 63 (11px wide)
         dc.drawBitmap(btX, rowY - 9, btIcon); // Height 19 -> rowY - 9
         if (!deviceSettings.phoneConnected) {
             dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
@@ -114,19 +148,13 @@ class GarminWatchFaceView extends WatchUi.WatchFace {
             //dc.drawLine(btX + 1, rowY + 10, btX + 10, rowY - 7);
         }
 
-        // 2. Battery Column (Center cx - 23)
+        // 2. Battery Column (Center cx - 18)
         // Scaled down battery icon from 22x11 to ~18x9 to match new icon scale
-        drawBatteryIcon(dc, cx - 33, rowY - 4-20, 18, 9, battery);
+        drawBatteryIcon(dc, cx - 27, rowY - 4-20, 18, 9, battery);
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx - 23, textY-20, Graphics.FONT_XTINY, battery + "%", Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        dc.drawText(cx - 18, textY-20, Graphics.FONT_XTINY, battery + "%", Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
-        // 3. Heart Rate Column (Center cx + 23)
-        var heartIcon = WatchUi.loadResource(Rez.Drawables.HeartIcon) as BitmapResource;
-        dc.drawBitmap(cx + 15, rowY - 8-20, heartIcon); // cx + 23 - (17/2), Height 17 -> rowY - 8
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx + 23, textY-20, Graphics.FONT_XTINY, hr, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
-
-        // 4. Weather Column (Center cx + 69)
+        // 3. Weather Column (Center cx + 42)
         var weatherIconRes = Rez.Drawables.SunIcon;
         if (weatherCond != null) {
             if (weatherCond == Weather.CONDITION_RAIN || weatherCond == Weather.CONDITION_HEAVY_RAIN || weatherCond == Weather.CONDITION_LIGHT_RAIN) {
@@ -136,7 +164,9 @@ class GarminWatchFaceView extends WatchUi.WatchFace {
             }
         }
         var weatherIcon = WatchUi.loadResource(weatherIconRes) as BitmapResource;
-        dc.drawBitmap(cx + 50, rowY - 12, weatherIcon); // cx + 69 - (24/2), Height 24 -> rowY - 12
+        dc.drawBitmap(cx + 30, rowY - 32, weatherIcon); // Icon row, like battery
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(cx + 42, textY - 20, Graphics.FONT_XTINY, weatherStr, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
         // --- CENTER ---
         // Date
@@ -156,14 +186,15 @@ class GarminWatchFaceView extends WatchUi.WatchFace {
         dc.drawText(cx - 5, cy + 5, Graphics.FONT_NUMBER_MEDIUM, hStr, Graphics.TEXT_JUSTIFY_RIGHT | Graphics.TEXT_JUSTIFY_VCENTER);
         dc.drawText(cx + 5, cy + 5, Graphics.FONT_NUMBER_MEDIUM, mStr, Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
 
-        // Seconds and chevrons
+        // Seconds
         dc.setColor(accentColor, Graphics.COLOR_TRANSPARENT);
         dc.drawText(cx + 50, cy + 40, Graphics.FONT_MEDIUM, clockTime.sec.format("%02d"), Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
-        for (var i=0; i<3; i++) {
-            var startX = cx - 20 + (i * 15);
-            var yOffset = cy + 40;
-            dc.fillPolygon([[startX, yOffset - 4], [startX + 8, yOffset - 4], [startX + 12, yOffset], [startX + 8, yOffset + 4], [startX, yOffset + 4], [startX + 4, yOffset]]);
-        }
+
+        // Heart rate (where the decorative chevrons used to be)
+        var heartIcon = WatchUi.loadResource(Rez.Drawables.HeartIcon) as BitmapResource;
+        dc.drawBitmap(cx - 22, cy + 40 - 8, heartIcon); // Height 17 -> centered on cy + 40
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(cx - 1, cy + 40, Graphics.FONT_TINY, hr, Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
 
         // --- BOTTOM ROW ---
         // Footprints
@@ -183,6 +214,19 @@ class GarminWatchFaceView extends WatchUi.WatchFace {
         var lunarString = _cachedLunarStr;
         dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
         dc.drawText(cx + 40, cy + 65, Graphics.FONT_XTINY, lunarString, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+
+        // Pulse Ox (latest reading from sensor history)
+        if (clockTime.min != _spo2Min) {
+            _spo2Min = clockTime.min;
+            _spo2Str = "SpO2 --";
+            if ((Toybox has :SensorHistory) && (SensorHistory has :getOxygenSaturationHistory)) {
+                var it = SensorHistory.getOxygenSaturationHistory({:period => 1, :order => SensorHistory.ORDER_NEWEST_FIRST});
+                var s = it != null ? it.next() : null;
+                if (s != null && s.data != null) { _spo2Str = "SpO2 " + s.data.format("%d") + "%"; }
+            }
+        }
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(cx, cy + 108, Graphics.FONT_XTINY, _spo2Str, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
         // --- ICONS ON LEFT ARC ---
         // Show icons only when relevant

@@ -9,4 +9,8 @@
     <bitmap id="SunIcon" filename="sun.png" />
     <bitmap id="CloudIcon" filename="cloud.png" />
     <bitmap id="RainIcon" filename="rain.png" />
+    <bitmap id="Bg1" filename="bg1.png" dithering="none" />
+    <bitmap id="Bg2" filename="bg2.png" dithering="none" />
+    <bitmap id="Bg3" filename="bg3.png" dithering="none" />
+    <bitmap id="Bg4" filename="bg4.png" dithering="none" />
 </drawables>

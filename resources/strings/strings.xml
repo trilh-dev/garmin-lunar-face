@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <strings>
     <string id="AppName">Garmin Watch Face</string>
+    <string id="BackgroundTitle">Background</string>
+    <string id="BgNone">Black</string>
+    <string id="Bg1">Hustle - blue neon</string>
+    <string id="Bg2">Sunrise runner</string>
+    <string id="Bg3">Hustle - red neon</string>
+    <string id="Bg4">Jump at sunset</string>
 </strings>

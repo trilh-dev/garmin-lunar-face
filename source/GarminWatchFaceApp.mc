@@ -16,6 +16,11 @@ class GarminWatchFaceApp extends Application.AppBase {
     function onStop(state as Dictionary?) as Void {
     }
 
+    // Called when the user changes settings in the Connect IQ phone app
+    function onSettingsChanged() as Void {
+        WatchUi.requestUpdate();
+    }
+
     // Return the initial view of your application here
     function getInitialView() as [Views] or [Views, InputDelegates] {
         return [ new GarminWatchFaceView() ];
